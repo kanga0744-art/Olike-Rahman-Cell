@@ -89,6 +89,10 @@
         /* Table Styling */
         .custom-table tr:nth-child(even) { background-color: #f8fafc; }
         .custom-table tr:hover { background-color: #f1f5f9; }
+
+        /* Sidebar Transition */
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        #main-content { transition: margin-left 0.3s ease-in-out; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -138,14 +142,20 @@
     </div>
 
     <!-- Sidebar (Fixed) -->
-    <aside id="sidebar" style="display: none;" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full bg-white border-r border-slate-200 md:translate-x-0" aria-label="Sidebar">
+    <aside id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full md:translate-x-0 bg-white border-r border-slate-200" aria-label="Sidebar">
         <div class="h-full flex flex-col overflow-y-auto">
             <!-- App Header -->
-            <div class="h-16 flex items-center px-6 border-b border-slate-100 flex-shrink-0">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3 text-white shadow-sm shadow-blue-200">
-                    <i class="fas fa-microchip"></i>
+            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100 flex-shrink-0">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3 text-white shadow-sm shadow-blue-200">
+                        <i class="fas fa-microchip"></i>
+                    </div>
+                    <h1 class="font-bold text-lg tracking-tight text-slate-800">Teknisi<span class="text-blue-600">OS</span></h1>
                 </div>
-                <h1 class="font-bold text-lg tracking-tight text-slate-800">Teknisi<span class="text-blue-600">OS</span></h1>
+                <!-- Close Button (Mobile Only) -->
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
             <!-- User Profile Section -->
@@ -194,12 +204,26 @@
     <!-- Main Content Area -->
     <div id="main-content" style="display: none;" class="md:ml-64 min-h-screen flex flex-col bg-slate-50 transition-all duration-300">
         
-        <!-- Header Mobile Toggle -->
-        <div class="md:hidden h-14 border-b border-slate-200 flex items-center px-4 bg-white shadow-sm z-20 sticky top-0">
-            <button onclick="toggleSidebar()" class="text-slate-500 hover:text-slate-800">
-                <i class="fas fa-bars text-lg"></i>
-            </button>
-            <span class="ml-4 font-bold text-slate-800">TeknisiOS</span>
+        <!-- Top Navigation Bar (Desktop & Mobile) -->
+        <div class="h-16 border-b border-slate-200 flex items-center justify-between px-4 bg-white shadow-sm z-20 sticky top-0">
+            <div class="flex items-center">
+                <!-- Desktop Sidebar Toggle -->
+                <button onclick="toggleSidebarDesktop()" class="hidden md:flex text-slate-500 hover:text-slate-800 p-2 rounded-lg hover:bg-slate-100 transition-colors mr-3" title="Toggle Sidebar">
+                    <i class="fas fa-bars text-lg"></i>
+                </button>
+                <!-- Mobile Sidebar Toggle -->
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-500 hover:text-slate-800 p-2 rounded-lg hover:bg-slate-100 transition-colors mr-3">
+                    <i class="fas fa-bars text-lg"></i>
+                </button>
+                
+                <h2 class="font-bold text-slate-800 md:hidden">TeknisiOS</h2>
+                <div id="page-title-header" class="hidden md:block font-medium text-slate-600">Dashboard</div>
+            </div>
+
+            <!-- Header Right (Date) -->
+            <div class="text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+                <i class="far fa-calendar-alt mr-1"></i> <span id="current-date-header"></span>
+            </div>
         </div>
 
         <!-- VIEW: DASHBOARD -->
@@ -207,7 +231,7 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">Status Rahman Cell</h2>
-                    <p class="text-slate-500 text-sm">Update hari ini: <span id="current-date" class="font-medium"></span></p>
+                    <p class="text-slate-500 text-sm mt-1">Ringkasan aktivitas bengkel hari ini.</p>
                 </div>
             </div>
             
@@ -426,7 +450,7 @@
                 <!-- Welcome Message -->
                 <div class="chat-ai chat-bubble">
                     <p><strong>Asrun (AI):</strong></p>
-                    <p>Wazzup Bestie! ☕ Asrun di sini. Ada HP apa yang bikin pusing hari ini? Sini cerita, sambil sruput kopi dulu biar santuy. Gue siap bantu diagnosa kerusakan atau tebak harga servisnya!</p>
+                    <p>Halo! Asrun di sini ☕. Ada masalah HP apa hari ini? Gue siap bantu diagnosa kerusakan atau estimasi biaya servis. Santai aja, ceritain detailnya ya.</p>
                 </div>
             </div>
 
@@ -581,6 +605,7 @@
         let stockItems = [];
         let apiKey = '';
         let chatHistory = [];
+        let isSidebarOpen = true; // Default state for desktop
 
         // Helper to get storage key based on current user
         function getStorageKey(key) {
@@ -609,7 +634,7 @@
             
             // Set current date
             const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', dateOpts);
+            document.getElementById('current-date-header').innerText = new Date().toLocaleDateString('id-ID', dateOpts);
         });
 
         // === AUTH FUNCTIONS ===
@@ -744,11 +769,11 @@
             
             apiKey = localStorage.getItem(getStorageKey('pollinations_key')) || '';
             
-            // Init Chat - UPDATED PERSONA: ASRUN
+            // Init Chat - UPDATED PERSONA: ASRUN (REFINED)
             chatHistory = [
                 { 
                     role: "system", 
-                    content: "Namamu Asrun, asisten teknisi HP yang jago banget tapi gayanya santai ala Gen-Z, ceria, dan humoris. Kamu 'coffee addict' (pecandu kopi) berat, jadi sering-seringlah menyinggung soal kopi atau ajak ngopi dulu biar tenang. Panggil user dengan sebutan akrab seperti 'Ngab', 'Bestie', atau 'Bro'. Tugasmu diagnosa kerusakan HP (hardware/software) dan kasih estimasi harga wajar (Rupiah), tapi sampaikan dengan bahasa gaul yang sopan dan asik. Kalau data stok LCD ditanya, arahkan mereka cek tab Stok LCD." 
+                    content: "Namamu Asrun, asisten teknisi HP yang cerdas, santai, dan solutif. Kamu suka minum kopi. Gaya bicaramu kasual (gue/lo) ala Gen-Z tapi tidak berlebihan (cringe). Tugasmu: 1. Diagnosa kerusakan HP berdasarkan keluhan. 2. Berikan estimasi harga servis yang wajar dalam Rupiah. 3. Jika ditanya stok barang, arahkan user cek tab 'Stok LCD'. Tetap ramah, to the point, dan membantu." 
                 }
             ];
 
@@ -800,6 +825,13 @@
             document.getElementById(`nav-${viewName}`).classList.add('bg-blue-50', 'text-blue-700', 'font-medium');
             document.getElementById(`nav-${viewName}`).classList.remove('text-slate-500');
 
+            // Update Header Title
+            let title = 'Dashboard';
+            if(viewName === 'services') title = 'Data Servis';
+            if(viewName === 'stock') title = 'Stok LCD';
+            if(viewName === 'ai-assistant') title = 'Asisten AI';
+            document.getElementById('page-title-header').innerText = title;
+
             if(viewName === 'dashboard') renderDashboard();
             if(viewName === 'stock') renderStockTable();
             
@@ -817,6 +849,23 @@
             const backdrop = document.getElementById('mobile-backdrop');
             sidebar.classList.toggle('-translate-x-full');
             backdrop.classList.toggle('hidden');
+        }
+
+        function toggleSidebarDesktop() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            
+            isSidebarOpen = !isSidebarOpen;
+            
+            if(isSidebarOpen) {
+                // Open Sidebar
+                sidebar.classList.remove('-translate-x-full');
+                mainContent.classList.add('md:ml-64');
+            } else {
+                // Close Sidebar
+                sidebar.classList.add('-translate-x-full');
+                mainContent.classList.remove('md:ml-64');
+            }
         }
 
         // === CRUD SERVICES ===
@@ -888,8 +937,19 @@
             }
         }
 
-        // Logic baru: Deduct stock jika servis selesai (Improved Matching)
+        // Logic baru: Deduct stock jika servis selesai (Improved Matching & Filtering)
         function tryDeductStock(service) {
+            // 1. FILTER: Cek apakah keluhan mengandung kata kunci LCD/Layar
+            // Ini menjawab pertanyaan: "Apakah sudah otomatis?" -> Iya, tapi selektif.
+            const issueLower = service.issue.toLowerCase();
+            const lcdKeywords = ['lcd', 'layar', 'tc', 'touchscreen', 'glass', 'kaca', 'blank', 'pecah'];
+            const isLcdRelated = lcdKeywords.some(keyword => issueLower.includes(keyword));
+
+            if (!isLcdRelated) {
+                // Bukan servis LCD, tidak perlu potong stok
+                return;
+            }
+
             // Gabungkan teks dari device dan kerusakan untuk pencarian
             const textToSearch = (service.device + " " + service.issue).toLowerCase();
             
@@ -930,14 +990,14 @@
                     stockItems[index] = item;
                     localStorage.setItem(getStorageKey('stock'), JSON.stringify(stockItems));
                     
-                    // Notifikasi sukses
-                    alert(`✅ STOK TERPAKAI:\n---------------------------\nItem: ${item.brand} ${item.model}\nSisa Stok: ${item.qty}\n---------------------------`);
+                    // Notifikasi sukses (Gaya Asrun)
+                    alert(`✅ Wih mantap Ngab! Stok LCD kepotong otomatis nih:\n---------------------------\n📱 Item: ${item.brand} ${item.model}\n📉 Sisa Stok: ${item.qty}\n---------------------------`);
                     
                     // Refresh tampilan jika perlu
                     renderStockTable();
                     renderDashboard();
                 } else {
-                    alert(`⚠️ PERINGATAN STOK:\nStok untuk ${item.brand} ${item.model} sudah 0.\nData stok tidak dikurangi.`);
+                    alert(`⚠️ Waduh Ngab!\nStok untuk ${item.brand} ${item.model} tercatat 0 (KOSONG).\nData stok gagal dikurangi. Cek gudang deh!`);
                 }
             }
         }
@@ -960,6 +1020,8 @@
             }
         }
 
+        // ... [rest of the stock functions: renderStockTable, etc. remain unchanged] ...
+        
         // === CRUD STOCK ===
         function renderStockTable() {
             const tbody = document.getElementById('stock-table-body');
@@ -1395,7 +1457,7 @@
                 document.getElementById('chat-container').innerHTML = `
                 <div class="chat-ai chat-bubble">
                     <p><strong>Asrun (AI):</strong></p>
-                    <p>Wazzup Bestie! ☕ Asrun di sini. Ada HP apa yang bikin pusing hari ini? Sini cerita, sambil sruput kopi dulu biar santuy. Gue siap bantu diagnosa kerusakan atau tebak harga servisnya!</p>
+                    <p>Halo! Asrun di sini ☕. Ada masalah HP apa hari ini? Gue siap bantu diagnosa kerusakan atau estimasi biaya servis. Santai aja, ceritain detailnya ya.</p>
                 </div>`;
                 // Keep updated system prompt
                 chatHistory = [chatHistory[0]]; 
@@ -1418,5 +1480,3 @@
     </script>
 </body>
 </html>
-              <link rel="icon" type="image/png" sizes="32x32" href="https://user.uploads.dev/file/9ca85d275ba2ea4b5c8a643848f2f562.webp">
-              <link rel="shortcut icon" href="https://user.uploads.dev/file/9ca85d275ba2ea4b5c8a643848f2f562.webp">
